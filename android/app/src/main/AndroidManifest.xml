@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.foodviewer">
+    package="com.enes.foodviewer">
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <!-- Android 13+ için ekstra kesin zamanlı alarm yetkisi -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />

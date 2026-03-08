@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.foodviewer"
+    namespace = "com.enes.foodviewer"
     compileSdk = 35
     ndkVersion = "27.0.12077973"
 
@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.foodviewer"
+        applicationId = "com.enes.foodviewer"
         minSdk = 23
         targetSdk = 35
         versionCode = 1
