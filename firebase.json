@@ -1,0 +1,38 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "foodviewer-e65fa",
+          "appId": "1:959370067865:android:8105b6d29cb66ed6fc9d08",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "foodviewer-e65fa",
+          "configurations": {
+            "android": "1:959370067865:android:8105b6d29cb66ed6fc9d08",
+            "ios": "1:959370067865:ios:97e110f0cc0db71efc9d08",
+            "macos": "1:959370067865:ios:97e110f0cc0db71efc9d08",
+            "web": "1:959370067865:web:ecb49fde575dac39fc9d08"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
+}
