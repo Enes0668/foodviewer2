@@ -13,7 +13,7 @@ class LocationService {
     try {
       // 🌐 Web için → konum sormadan direkt default şehir/koordinat
       if (kIsWeb) {
-        return "Ankara"; // Buraya dilediğin default şehri yazabilirsin
+        return "Karaman"; // Buraya dilediğin default şehri yazabilirsin
       }
 
       // 🔹 Mobil kısmı aynen legacy
