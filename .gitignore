@@ -44,7 +44,7 @@ app.*.map.json
 /android/app/profile
 
 # Security
-.env
+env.txt
 key.jks
 *.jks
 *.keystore

@@ -13,8 +13,8 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load .env
-  await dotenv.load(fileName: ".env");
+  // Load env.txt
+  await dotenv.load(fileName: "env.txt");
 
   // Supabase init
   await Supabase.initialize(

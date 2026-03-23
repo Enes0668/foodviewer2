@@ -15,6 +15,8 @@ class NotificationService {
   static Future<void> initializeNotification({
     bool requestPermissions = true,
   }) async {
+    if (kIsWeb) return;
+
     // Timezone
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Europe/Istanbul'));
