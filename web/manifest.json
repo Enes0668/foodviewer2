@@ -1,6 +1,6 @@
 {
-    "name": "foodviewer",
-    "short_name": "foodviewer",
+    "name": "Günün Menüsü",
+    "short_name": "Günün Menüsü",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
