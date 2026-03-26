@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:foodviewer/pages/araogun_page.dart';
 import 'package:foodviewer/services/notification_service.dart';
@@ -20,6 +21,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   DateTime selectedDate = DateTime.now();
   bool _isLoading = true;
+  bool _isAraOgunLoading = true;
   String? _deviceId;
   List<Map<String, dynamic>> kahvaltilar = [];
   List<Map<String, dynamic>> aksamYemekleri = [];
@@ -80,8 +82,11 @@ class _HomePageState extends State<HomePage> {
       await _initDeviceId();
       await _loadSelections();
       await _loadUserCity(); // İlk olarak Konum izni
-      await NotificationService.requestPermissionsAsync(); // İkinci olarak Bildirim izni
+      
       await _fetchMeals();
+      
+      _syncSelectionsWithDB(); // Yemekler yüklendikten sonra DB'den seçim durumunu getir (bloklamadan)
+      NotificationService.requestPermissionsAsync(); // Bildirim izni (Bloklamadan sorulsun)
     });
   }
 
@@ -95,9 +100,6 @@ class _HomePageState extends State<HomePage> {
       _selectedItems[key] = true;
     }
     setState(() {});
-
-    // 2. Ardından Veritabanından Güncelle (Senkronizasyon)
-    await _syncSelectionsWithDB();
   }
 
   // Yeni Senkronizasyon Metodu (FetchMeals sonrasında da çağrılabilir)
@@ -433,42 +435,136 @@ class _HomePageState extends State<HomePage> {
     return total;
   }
 
+  Future<void> _clearCacheIfCityChanged(String newCity) async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedCity = prefs.getString("current_cached_city");
+    
+    if (savedCity != null && savedCity != newCity) {
+      final keys = prefs.getKeys();
+      for (final k in keys) {
+        if (k.startsWith("cache_kahvalti_") || 
+            k.startsWith("cache_aksam_") || 
+            k.startsWith("cache_time_")) {
+          await prefs.remove(k);
+        }
+      }
+    }
+    await prefs.setString("current_cached_city", newCity);
+  }
+
   Future<void> _fetchMeals() async {
     setState(() => _isLoading = true);
 
-    final dateKey = DateFormat("yyyy-MM-dd").format(selectedDate);
+    final currentMonthStr = DateFormat("yyyy-MM").format(selectedDate);
+    final dateKeyStr = DateFormat("yyyy-MM-dd").format(selectedDate);
+    final city = _userCity ?? "Karaman";
+    
+    await _clearCacheIfCityChanged(city);
+
+    // Cache'den verileri yüklemeyi dene
+    bool hasCache = await _loadMonthFromCache(currentMonthStr, dateKeyStr);
+
+    if (hasCache) {
+      setState(() => _isLoading = false);
+      // Arka planda 6 saatten eskiyse güncelle
+      _refreshMonthInBackgroundIfNeeded(currentMonthStr, city);
+    } else {
+      // Önbellekte yoksa Supabase'den çek
+      await _fetchMonthFromSupabase(currentMonthStr, city);
+      await _loadMonthFromCache(currentMonthStr, dateKeyStr);
+      setState(() => _isLoading = false);
+    }
+
+    if (mounted) setState(() => _isAraOgunLoading = true);
+    await _fetchAraOgunler(); // Ara öğünler anlık çekilmeye devam eder
+    if (mounted) setState(() => _isAraOgunLoading = false);
+    
+    await _saveFavoriteMeals();
+  }
+
+  Future<bool> _loadMonthFromCache(String monthStr, String targetDate) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cacheKeyKahvalti = "cache_kahvalti_$monthStr";
+    final cacheKeyAksam = "cache_aksam_$monthStr";
+
+    final kahvaltiJson = prefs.getString(cacheKeyKahvalti);
+    final aksamJson = prefs.getString(cacheKeyAksam);
+
+    if (kahvaltiJson != null && aksamJson != null) {
+      try {
+        List<dynamic> kList = json.decode(kahvaltiJson);
+        List<dynamic> aList = json.decode(aksamJson);
+
+        final kToday = kList.where((e) => e['kahvalti_tarihi'] == targetDate).toList();
+        final aToday = aList.where((e) => e['aksam_tarihi'] == targetDate).toList();
+
+        kahvaltilar = List<Map<String, dynamic>>.from(kToday);
+        aksamYemekleri = List<Map<String, dynamic>>.from(aToday);
+        return true;
+      } catch (e) {
+        debugPrint("Cache okunurken hata: $e");
+      }
+    }
+    return false;
+  }
+
+  Future<void> _refreshMonthInBackgroundIfNeeded(String monthStr, String city) async {
+    final prefs = await SharedPreferences.getInstance();
+    final timeKey = "cache_time_$monthStr";
+    final lastRefreshStr = prefs.getString(timeKey);
+
+    if (lastRefreshStr != null) {
+      final lastRefresh = DateTime.tryParse(lastRefreshStr);
+      if (lastRefresh != null && DateTime.now().difference(lastRefresh).inHours < 6) {
+        return; // 6 saat geçmemiş
+      }
+    }
+
+    debugPrint("Arka planda (sessizce) aylık veri yenileniyor...");
+    await _fetchMonthFromSupabase(monthStr, city);
+    
+    if (DateFormat("yyyy-MM").format(selectedDate) == monthStr) {
+      final dateKeyStr = DateFormat("yyyy-MM-dd").format(selectedDate);
+      await _loadMonthFromCache(monthStr, dateKeyStr);
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _fetchMonthFromSupabase(String monthStr, String city) async {
     final supabase = Supabase.instance.client;
+    
+    final int year = int.parse(monthStr.split("-")[0]);
+    final int month = int.parse(monthStr.split("-")[1]);
+    
+    final startDateKey = "$monthStr-01";
+    // o ayın kaç çektiğini hesapla:
+    final lastDay = DateTime(year, month + 1, 0).day;
+    final endDateKey = "$monthStr-${lastDay.toString().padLeft(2, '0')}";
 
     try {
-      // Kahvaltı ve akşam yemekleri sorguları
       final kResponse = await supabase
           .from('kahvaltilar')
           .select()
-          .eq('kahvalti_tarihi', dateKey)
-          .eq('city', _userCity ?? "Karaman"); // nullable ise Ankara kullan
+          .gte('kahvalti_tarihi', startDateKey)
+          .lte('kahvalti_tarihi', endDateKey)
+          .eq('city', city);
 
       final aResponse = await supabase
           .from('aksam_yemekleri')
           .select()
-          .eq('aksam_tarihi', dateKey)
-          .eq('city', _userCity ?? "Karaman");
+          .gte('aksam_tarihi', startDateKey)
+          .lte('aksam_tarihi', endDateKey)
+          .eq('city', city);
 
-      // Ara öğünler için null kontrolü
-
-      setState(() {
-        kahvaltilar = List<Map<String, dynamic>>.from(kResponse);
-        aksamYemekleri = List<Map<String, dynamic>>.from(
-          aResponse,
-        ); // doğru veriyi ata
-      });
-
-      await _fetchAraOgunler();
-      await _saveFavoriteMeals();
+      // Cache'e şifrelenmiş halde kaydet
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("cache_kahvalti_$monthStr", json.encode(kResponse));
+      await prefs.setString("cache_aksam_$monthStr", json.encode(aResponse));
+      await prefs.setString("cache_time_$monthStr", DateTime.now().toIso8601String());
+      
     } catch (e) {
-      debugPrint("Supabase HATA: $e");
+      debugPrint("Aylık veri çekilirken hata: $e");
     }
-
-    setState(() => _isLoading = false);
   }
 
   Future<void> _selectDate() async {
@@ -1067,7 +1163,9 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
-                    "Aldığınız Toplam Kalori: ${total.toStringAsFixed(0)} kcal",
+                    _isAraOgunLoading
+                        ? "Kalori Yükleniyor..."
+                        : "Aldığınız Toplam Kalori: ${total.toStringAsFixed(0)} kcal",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Theme.of(context).brightness == Brightness.dark
