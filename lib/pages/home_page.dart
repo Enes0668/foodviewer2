@@ -18,7 +18,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   DateTime selectedDate = DateTime.now();
   bool _isLoading = true;
   bool _isAraOgunLoading = true;
@@ -64,6 +64,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // 🔒 Auth Bekleme Mekanizması
@@ -1182,6 +1183,29 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Eğer kullanıcı bugün sekmesindeyse, yeni gün gelmiş mi kontrol et ve tarihi güncelle.
+      if (_isTodaySelected()) {
+        final now = DateTime.now();
+        if (selectedDate.day != now.day || selectedDate.month != now.month || selectedDate.year != now.year) {
+          setState(() {
+            selectedDate = now;
+          });
+        }
+      }
+      // Uygulama arka plandan döndüğünde güncel veriyi (ve 6 saat kuralını) tekrar kontrol et
+      _fetchMeals();
+    }
   }
 }
 
