@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import '../theme_provider.dart';
 import '../services/location_service.dart';
 import '../widgets/custom_loading.dart';
+import 'package:foodviewer/pages/video_instruction_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -88,6 +89,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       
       _syncSelectionsWithDB(); // Yemekler yüklendikten sonra DB'den seçim durumunu getir (bloklamadan)
       NotificationService.requestPermissionsAsync(); // Bildirim izni (Bloklamadan sorulsun)
+      // İzinden ve verilerden sonra video gösterme mantığı
+      final prefs = await SharedPreferences.getInstance();
+
+      final isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
+      if (isFirstLaunch) {
+        await prefs.setBool('is_first_launch', false);
+        if (mounted) {
+          Navigator.of(context).push(
+            PageRouteBuilder(
+              opaque: false, // Arkaplanı saydam yapar, arkada menü görünür
+              pageBuilder: (context, _, __) => const VideoInstructionScreen(),
+              transitionsBuilder: (context, animation, _, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+            ),
+          );
+        }
+      }
     });
   }
 

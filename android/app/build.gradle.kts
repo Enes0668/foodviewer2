@@ -4,7 +4,6 @@ import java.io.FileInputStream
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.gms.google-services")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -16,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.enes.foodviewer"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     signingConfigs {
@@ -31,7 +30,7 @@ android {
     defaultConfig {
         applicationId = "com.enes.foodviewer"
         minSdk = 23
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 3
         versionName = "1.3"
     }

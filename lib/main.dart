@@ -9,9 +9,13 @@ import 'theme_provider.dart';
 import 'services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:foodviewer/pages/video_instruction_screen.dart';
+import 'package:media_kit/media_kit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
 
   // Load env.txt
   await dotenv.load(fileName: "env.txt");
