@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:foodviewer/pages/entry_page.dart';
+import 'package:foodviewer/pages/welcome_page.dart';
 import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'theme_provider.dart';
@@ -26,17 +27,14 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_KEY']!,
   );
 
-  // 🔒 Anonymous Auth (Gizli Oturum Açma)
-  // Bu sayede veritabanına sadece "giriş yapmış" kullanıcılar erişebilir (RLS için şart).
+  // Oturum kontrolü — kayıtlı kullanıcı yoksa anonim oturum aç (RLS için şart)
   try {
-    final session = await Supabase.instance.client.auth.currentSession;
+    final session = Supabase.instance.client.auth.currentSession;
     if (session == null) {
       await Supabase.instance.client.auth.signInAnonymously();
-      debugPrint(
-        "👤 Yeni anonim kullanıcı oluşturuldu: ${Supabase.instance.client.auth.currentUser?.id}",
-      );
+      debugPrint("👤 Anonim oturum açıldı");
     } else {
-      debugPrint("👤 Mevcut kullanıcı ile devam ediliyor: ${session.user.id}");
+      debugPrint("👤 Oturum devam ediyor — anonim: ${session.user.isAnonymous}, id: ${session.user.id}");
     }
   } catch (e) {
     debugPrint("⚠️ Auth Error: $e");
@@ -52,16 +50,20 @@ void main() async {
     }
   }
 
+  final prefs = await SharedPreferences.getInstance();
+  final welcomeShown = prefs.getBool('welcome_shown') ?? false;
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
-      child: const FoodViewerApp(),
+      child: FoodViewerApp(showWelcome: !welcomeShown),
     ),
   );
 }
 
 class FoodViewerApp extends StatelessWidget {
-  const FoodViewerApp({super.key});
+  final bool showWelcome;
+  const FoodViewerApp({super.key, required this.showWelcome});
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +74,7 @@ class FoodViewerApp extends StatelessWidget {
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: themeProvider.lightTheme,
       darkTheme: themeProvider.darkTheme,
-      home: const EntryPage(),
+      home: showWelcome ? const WelcomePage() : const EntryPage(),
     );
   }
 }

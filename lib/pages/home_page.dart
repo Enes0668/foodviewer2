@@ -11,6 +11,7 @@ import '../theme_provider.dart';
 import '../services/location_service.dart';
 import '../widgets/custom_loading.dart';
 import 'package:foodviewer/pages/video_instruction_screen.dart';
+import 'package:foodviewer/pages/welcome_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -1067,6 +1068,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          if (Supabase.instance.client.auth.currentUser?.isAnonymous == false)
+            TextButton.icon(
+              onPressed: () async {
+                await Supabase.instance.client.auth.signOut();
+                await Supabase.instance.client.auth.signInAnonymously();
+                if (!context.mounted) return;
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const WelcomePage()),
+                  (_) => false,
+                );
+              },
+              icon: Icon(Icons.logout, size: 18,
+                  color: Theme.of(context).colorScheme.onPrimary),
+              label: Text('Çıkış Yap',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600)),
+            )
+          else
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const WelcomePage()),
+                );
+              },
+              icon: Icon(Icons.login, size: 18,
+                  color: Theme.of(context).colorScheme.onPrimary),
+              label: Text('Giriş Yap',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600)),
+            ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
