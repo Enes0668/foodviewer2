@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:foodviewer/pages/entry_page.dart';
 import 'package:foodviewer/pages/welcome_page.dart';
+import 'package:foodviewer/pages/kvkk_page.dart';
 import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'theme_provider.dart';
@@ -53,22 +54,40 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final welcomeShown = prefs.getBool('welcome_shown') ?? false;
+  final kvkkAccepted = prefs.getBool('kvkk_accepted') ?? false;
 
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
-      child: FoodViewerApp(showWelcome: !welcomeShown),
+      child: FoodViewerApp(
+        showWelcome: !welcomeShown,
+        kvkkAccepted: kvkkAccepted,
+      ),
     ),
   );
 }
 
 class FoodViewerApp extends StatelessWidget {
   final bool showWelcome;
-  const FoodViewerApp({super.key, required this.showWelcome});
+  final bool kvkkAccepted;
+  const FoodViewerApp({
+    super.key,
+    required this.showWelcome,
+    required this.kvkkAccepted,
+  });
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+
+    Widget home;
+    if (!kvkkAccepted) {
+      home = KvkkPage(showWelcome: showWelcome);
+    } else if (showWelcome) {
+      home = const WelcomePage();
+    } else {
+      home = const EntryPage();
+    }
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -84,7 +103,7 @@ class FoodViewerApp extends StatelessWidget {
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: themeProvider.lightTheme,
       darkTheme: themeProvider.darkTheme,
-      home: showWelcome ? const WelcomePage() : const EntryPage(),
+      home: home,
     );
   }
 }
