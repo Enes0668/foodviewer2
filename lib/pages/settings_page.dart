@@ -12,6 +12,8 @@ import 'theme_page.dart';
 import 'feedback_page.dart';
 import 'help_us_page.dart';
 import '../widgets/custom_loading.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'welcome_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -24,6 +26,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _breakfastNotificationEnabled = false;
   bool _dinnerNotificationEnabled = false;
   bool _loading = true;
+  bool _isDeleting = false;
 
   // 81 İl
   final List<String> _cities = [
@@ -338,6 +341,68 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setString("selected_city", city);
   }
 
+  Future<void> _deleteAccount() async {
+    // Onay dialogu
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hesabı Kalıcı Olarak Sil'),
+        content: const Text(
+          'Bu işlem geri alınamaz.\n\n'
+          'Hesabınız ve tüm kişisel verileriniz (yemek seçimleri, sağlık bilgileri, ara öğünler) kalıcı olarak silinecektir.\n\n'
+          'Devam etmek istiyor musunuz?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Evet, Sil'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isDeleting = true);
+
+    try {
+      // Bildirimleri iptal et
+      if (_breakfastNotificationEnabled) await _onToggleBreakfast(false);
+      if (_dinnerNotificationEnabled) await _onToggleDinner(false);
+
+      // Supabase RPC ile tüm verileri + auth hesabını sil
+      await Supabase.instance.client.rpc('delete_user_account');
+
+      // SharedPreferences'ı temizle
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      if (!mounted) return;
+
+      // WelcomePage'e yönlendir, tüm route stack'ini temizle
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const WelcomePage()),
+        (_) => false,
+      );
+    } catch (e) {
+      debugPrint('Hesap silme hatası: $e');
+      if (!mounted) return;
+      setState(() => _isDeleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hesap silinirken bir hata oluştu. Lütfen tekrar deneyin.'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeColor = Theme.of(context).primaryColor;
@@ -562,6 +627,73 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                     iconColor: primaryColor,
                   ),
+
+                  // 🗑️ HESAP SİLME (yalnızca kayıtlı kullanıcılara göster)
+                  if (Supabase.instance.client.auth.currentUser?.isAnonymous == false) ...[
+                    const SizedBox(height: 32),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.manage_accounts, color: Colors.red.shade400),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Hesap',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Hesabınızı sildiğinizde tüm kişisel verileriniz (yemek seçimleri, sağlık bilgileri, ara öğünler) kalıcı olarak silinir. Bu işlem geri alınamaz.',
+                              style: TextStyle(fontSize: 13, color: Colors.grey),
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _isDeleting ? null : _deleteAccount,
+                                icon: _isDeleting
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.red,
+                                        ),
+                                      )
+                                    : const Icon(Icons.delete_forever, color: Colors.red),
+                                label: Text(
+                                  _isDeleting ? 'Siliniyor...' : 'Hesabı Kalıcı Olarak Sil',
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Colors.red),
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
