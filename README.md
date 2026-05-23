@@ -1,4 +1,4 @@
-# 🍽️ FoodViewer - KYK Yurtları İçin Akıllı Beslenme Takip Uygulaması
+# 🍽️ Günün Menüsü - KYK Yurtları İçin Akıllı Beslenme Takip Uygulaması
 
 **Sağlıklı beslenmenin akıllı takipçisi** — KYK yurtlarında kalan öğrencilerin günlük menüyü görüp, kalori ve sağlık durumlarını takip etmeleri için geliştirilmiş mobil uygulama.
 
@@ -6,7 +6,7 @@
 
 ## 📱 Uygulamaya Genel Bakış
 
-FoodViewer, KYK yurtlarında sunulan yemekleri dinamik olarak görüntüleyen ve öğrencilerin kişisel sağlık verilerini (VKİ, kalori, adım sayısı) takip etmelerine olanak sağlayan **Flutter tabanlı cross-platform mobil uygulamasıdır**.
+Günün Menüsü, KYK yurtlarında sunulan yemekleri dinamik olarak görüntüleyen ve öğrencilerin kişisel sağlık verilerini (VKİ, kalori, adım sayısı) takip etmelerine olanak sağlayan **Flutter tabanlı cross-platform mobil uygulamasıdır**.
 
 **Ana Hedef:** Öğrencilerin beslenme alışkanlıklarını bilinçlendirerek, sağlıklı yaşamı desteklemek.
 
@@ -91,8 +91,8 @@ FoodViewer, KYK yurtlarında sunulan yemekleri dinamik olarak görüntüleyen ve
 
 ### Desteklenen Platformlar
 - ✅ Android (Min SDK 21)
-- ✅ iOS
-- ⏳ Web (Hazırlanıyor)
+- ✅ Web 
+- ⏳ İos
 - ⏳ Linux & macOS
 
 ---
@@ -279,22 +279,22 @@ Base Adım = VKİ'ye göre belirlenir (7000-9000)
 Bu proje **açık kaynak kodlu değildir**, ancak:
 - 🐛 Bug raporları için [Issues](https://github.com/Enes0668/foodviewer2/issues) açın
 - 💡 Önerileriniz için [Discussions](https://github.com/Enes0668/foodviewer2/discussions) kullanın
-- 📧 İletişim: Profil sayfasındaki bağlantıları kontrol edin
+- 📧 İletişim: melihenes2@gmail.com
 
 ---
 
 ## 📜 Lisans
 
-Bu proje **MIT Lisansı** altında lisanslıdır.
+Bu proje şu anda **kapalı kaynak kodludur**. Ticari kullanım için izin alınız.
 
 ---
 
 ## 👤 Geliştirici
 
-**Enes Çoban** - Flutter & Full-Stack Developer
+**Enes Melih Eroğlu** - Flutter & Full-Stack Developer
 
 - 🌐 [GitHub](https://github.com/Enes0668)
-- 💼 [LinkedIn](https://linkedin.com/in/enescode)
+- 💼 [LinkedIn](https://www.linkedin.com/in/enes-melih-ero%C4%9Flu-77609a2b3/)
 
 ---
 
@@ -302,13 +302,14 @@ Bu proje **MIT Lisansı** altında lisanslıdır.
 
 ✅ **Üretim Hazırı**: Gerçek KYK yurtları tarafından kullanıma hazır
 ✅ **Veritabanı Güvenliği**: Supabase RLS ile tam korumalı
-✅ **Offline Desteği**: Ay bazında veri cachelemesi
 ✅ **Türkçe Lokalizasyon**: Tamamen Türkçe arayüz ve takip
 ✅ **KVKK Uyumlu**: Kullanıcı gizliliği korumalı
 
 ---
 
 ## 📞 Destek & Geri Bildirim
+
+📧 Email: melihenes2@gmail.com
 
 Herhangi bir sorun veya geri bildirim için lütfen [Issues](https://github.com/Enes0668/foodviewer2/issues) sekmesinde bir sorun açın.
 
