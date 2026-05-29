@@ -61,6 +61,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     "çıtır tavuk",
     "tavuk şinitzel",
     "et tantuni",
+    "burger",
+    "tavuk burger",
+    "fırında köri soslu tavuk",
+    "tavuk çökertme",
+    "fırında beşamel soslu tavuk",
   ];
 
   @override

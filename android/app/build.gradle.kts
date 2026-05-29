@@ -5,6 +5,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 val keystoreProperties = Properties()
@@ -31,7 +32,7 @@ android {
         applicationId = "com.enes.foodviewer"
         minSdk = 23
         targetSdk = 36
-        versionCode = 5
+        versionCode = 6
         versionName = "2.0"
     }
 

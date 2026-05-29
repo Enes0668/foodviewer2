@@ -15,9 +15,12 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:foodviewer/pages/video_instruction_screen.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'services/fcm_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   MediaKit.ensureInitialized();
 
   // Load env.txt
@@ -41,6 +44,9 @@ void main() async {
   } catch (e) {
     debugPrint("⚠️ Auth Error: $e");
   }
+
+  // FCM token al ve Supabase'e kaydet
+  await FCMService.initialize();
 
   // Notification service init
   await NotificationService.initializeNotification(requestPermissions: false);

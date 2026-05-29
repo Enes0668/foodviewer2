@@ -53,3 +53,16 @@ key.properties
 /android/app/upload-keystore.jks
 /android/key.properties
 /android/app/google-services.json
+
+# Firebase Admin SDK service account
+*firebase-adminsdk*.json
+
+# Firebase CLI cache
+.firebase/
+
+# Node modules
+node_modules/
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/

@@ -1,13 +1,8 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:foodviewer/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
-import 'package:permission_handler/permission_handler.dart';
-import '../services/notification_service.dart';
-import '../services/background_task_service.dart';
+import '../services/fcm_service.dart';
 import 'theme_page.dart';
 import 'feedback_page.dart';
 import 'help_us_page.dart';
@@ -163,175 +158,24 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setBool("dinner_notification", value);
   }
 
-  Future<void> _checkExactAlarmPermission() async {
-    if (kIsWeb || !Platform.isAndroid) return;
-    final status = await Permission.scheduleExactAlarm.status;
-    if (!status.isGranted) {
-      // Android 12+ (API 31+) için kullanıcıdan izin isteşi
-      await Permission.scheduleExactAlarm.request();
-    }
-  }
-
-  Future<bool> _checkBatteryOptimization() async {
-    if (kIsWeb || !Platform.isAndroid) return true;
-
-    final status = await Permission.ignoreBatteryOptimizations.status;
-    if (!status.isGranted) {
-      // Eğer optimizasyon açıksa (uygulama kısıtlamadaysa) kullanıcıya sor
-      final result = await Permission.ignoreBatteryOptimizations.request();
-      if (result.isGranted) {
-        debugPrint("🔋 Pil optimizasyonu başarıyla kapatıldı.");
-        return true;
-      }
-      return false; // İzin verilmedi
-    }
-    return true; // Zaten izin verilmiş
-  }
-
   Future<void> _onToggleBreakfast(bool value) async {
-    if (value) {
-      final hasBatteryOpt = await _checkBatteryOptimization();
-      if (!hasBatteryOpt) {
-        setState(() => _breakfastNotificationEnabled = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Pil optimizasyonu reddedildi. Arka plan işlemleri kısıtlanabilir.',
-              ),
-            ),
-          );
-        }
-        return;
-      }
-
-      await _checkExactAlarmPermission();
-      final status = await Permission.scheduleExactAlarm.status;
-      if (!kIsWeb && Platform.isAndroid && status.isDenied) {
-        // Eğer kullanıcı reddettiyse switch'i açtırma
-        setState(() => _breakfastNotificationEnabled = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Lütfen ayarlardan "Alarmlar ve hatırlatıcılar" iznini verin.',
-              ),
-            ),
-          );
-        }
-        return;
-      }
-    }
-
-    setState(() {
-      _breakfastNotificationEnabled = value;
-    });
-
+    setState(() => _breakfastNotificationEnabled = value);
     await _saveBreakfastNotification(value);
-
-    if (value) {
-      // Start Alarm Manager for 06:00
-      final now = DateTime.now();
-      DateTime scheduleTime = DateTime(now.year, now.month, now.day, 6, 0);
-      if (scheduleTime.isBefore(now)) {
-        scheduleTime = scheduleTime.add(const Duration(days: 1));
-      }
-
-      await AndroidAlarmManager.oneShotAt(
-        scheduleTime,
-        200, // Alarm ID
-        backgroundBreakfastTask,
-        exact: true,
-        wakeup: true,
-        rescheduleOnReboot: true,
-      );
-
-      // YEDEK: Native Local Notification (Her zaman çalışır)
-      await NotificationService.scheduleDaily(
-        hour: 6,
-        minute: 0,
-        title: "🍳 Kahvaltı Zamanı!",
-        body: "Gün güzel bir kahvaltıyla başlar!",
-        id: 200,
-      );
-    } else {
-      // Cancel Alarm
-      await AndroidAlarmManager.cancel(200);
-      await NotificationService.notifications.cancel(200);
-    }
+    await FCMService.updatePreference(
+      breakfastEnabled: value,
+      dinnerEnabled: _dinnerNotificationEnabled,
+      city: _selectedCity,
+    );
   }
 
   Future<void> _onToggleDinner(bool value) async {
-    if (value) {
-      final hasBatteryOpt = await _checkBatteryOptimization();
-      if (!hasBatteryOpt) {
-        setState(() => _dinnerNotificationEnabled = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Pil optimizasyonu reddedildi. Arka plan işlemleri kısıtlanabilir.',
-              ),
-            ),
-          );
-        }
-        return;
-      }
-
-      await _checkExactAlarmPermission();
-      final status = await Permission.scheduleExactAlarm.status;
-      if (!kIsWeb && Platform.isAndroid && status.isDenied) {
-        // Eğer kullanıcı reddettiyse switch'i açtırma
-        setState(() => _dinnerNotificationEnabled = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Lütfen ayarlardan "Alarmlar ve hatırlatıcılar" iznini verin.',
-              ),
-            ),
-          );
-        }
-        return;
-      }
-    }
-
-    setState(() {
-      _dinnerNotificationEnabled = value;
-    });
-
+    setState(() => _dinnerNotificationEnabled = value);
     await _saveDinnerNotification(value);
-
-    if (value) {
-      // Start Alarm Manager for 16:00
-      final now = DateTime.now();
-      DateTime scheduleTime = DateTime(now.year, now.month, now.day, 16, 0);
-      if (scheduleTime.isBefore(now)) {
-        scheduleTime = scheduleTime.add(const Duration(days: 1));
-      }
-
-      await AndroidAlarmManager.oneShotAt(
-        scheduleTime,
-        201, // Alarm ID
-        backgroundDinnerTask,
-        exact: true,
-        wakeup: true,
-        rescheduleOnReboot: true,
-      );
-
-      // YEDEK: Native Local Notification (Her zaman çalışır)
-      await NotificationService.scheduleDaily(
-        hour: 16,
-        minute: 0,
-        title: "🍽 Akşam Yemeği Zamanı!",
-        body: "Akşam yemeği seni bekliyor!",
-        id: 201,
-      );
-    } else {
-      // Cancel Alarm
-      await AndroidAlarmManager.cancel(201);
-      await NotificationService.notifications.cancel(201);
-    }
+    await FCMService.updatePreference(
+      breakfastEnabled: _breakfastNotificationEnabled,
+      dinnerEnabled: value,
+      city: _selectedCity,
+    );
   }
 
   Future<void> _saveSelectedCity(String? city) async {
