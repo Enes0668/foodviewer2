@@ -32,8 +32,8 @@ android {
         applicationId = "com.enes.foodviewer"
         minSdk = 23
         targetSdk = 36
-        versionCode = 6
-        versionName = "2.0"
+        versionCode = 8
+        versionName = "2.1.1"
     }
 
     compileOptions {

@@ -37,39 +37,21 @@ class _HelpUsPageState extends State<HelpUsPage> {
   ];
 
   Future<void> _checkPermissionsAndPickImage(ImageSource source) async {
-    PermissionStatus status;
-
     if (source == ImageSource.camera) {
-      status = await Permission.camera.request();
-    } else {
-      if (Platform.isAndroid) {
-        // Request both storage and photos to handle different Android versions
-        Map<Permission, PermissionStatus> statuses = await [
-          Permission.storage,
-          Permission.photos,
-        ].request();
-        
-        if (statuses[Permission.photos]!.isGranted || statuses[Permission.storage]!.isGranted) {
-          status = PermissionStatus.granted;
-        } else if (statuses[Permission.photos]!.isPermanentlyDenied || statuses[Permission.storage]!.isPermanentlyDenied) {
-          status = PermissionStatus.permanentlyDenied;
-        } else {
-          status = PermissionStatus.denied;
-        }
+      final status = await Permission.camera.request();
+      if (status.isGranted) {
+        _pickImage(source);
+      } else if (status.isPermanentlyDenied) {
+        _showSettingsDialog();
       } else {
-        status = await Permission.photos.request();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Bu işlemi yapmak için izin vermeniz gerekmektedir.")),
+        );
       }
-    }
-
-    if (status.isGranted || status.isLimited) {
-      _pickImage(source);
-    } else if (status.isPermanentlyDenied) {
-      _showSettingsDialog();
     } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bu işlemi yapmak için izin vermeniz gerekmektedir.")),
-      );
+      // Galeri için Android Photo Picker kullanılır — izin gerekmez
+      _pickImage(source);
     }
   }
 
